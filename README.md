@@ -16,7 +16,7 @@ $ spchk --help
 Help
 ====
 ```sh
-$ sup --help
+$ spchk --help
 Usage: $FILENAME [OPTIONS...]
 
 OPTIONS:
@@ -28,13 +28,13 @@ OPTIONS:
       --version    Print program version
 
 Examples:
-   $FILENAME -p 8000 -e \"php -q /var/www/html/script.php\" -v
+   $FILENAME -p 8000 -e "php -q /var/www/html/script.php" -v
    $FILENAME -p 80 -e \"systemctl start httpd.service\"
    $FILENAME --usage
 
 You might use this program in your crontab
 Cron example:
-  */15 * * * * $0 -p 8000 -e \"php -q /var/www/html/script.php\"
+  */15 * * * * $0 -p 8000 -e "php -q /var/www/html/script.php"
   The line above execute every 15 minutes to check the script.php is working at port 8000
   For more details see 'man crontab'
 ```
@@ -42,6 +42,7 @@ Cron example:
 Usage
 =====
 ```sh
+$ spchk --usage
 Usage: $FILENAME --port <number> --execute <command> [--verbose] [--usage] [--version]
 
 Examples:
