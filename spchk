@@ -1,0 +1,124 @@
+#!/bin/bash
+
+FILENAME=$0
+FILENAME=${FILENAME##*/}
+
+Help () {
+   echo "Usage: $FILENAME [OPTIONS...]"
+   echo
+   echo "OPTIONS:"
+   echo "  -p, --port       Port of the process"
+   echo "  -e, --execute    Command to execute if the process is not working"
+   echo "  -v, --verbose    Verbosely list processed"
+   echo "  -h, --help       Show this help"
+   echo "      --usage      Give you a short usage message"
+   echo "      --version    Print program version"
+   echo
+   echo "Examples:"
+   echo "   $FILENAME -p 8000 -e \"php -q /var/www/html/script.php\" -v"
+   echo "   $FILENAME -p 80 -e \"systemctl start httpd.service\""
+   echo "   $FILENAME --usage"
+   echo
+   echo "You might use this program in your crontab"
+   echo "Cron example:"
+   echo "  */15 * * * * $0 -p 8000 -e \"php -q /var/www/html/script.php\""
+   echo "  The line above execute every 15 minutes to check the script.php is working at port 8000"
+   echo "  For more details see 'man crontab'"
+   echo
+   exit 0
+}
+
+Usage () {
+   echo "Usage: $FILENAME --port <number> --execute <command> [--verbose] [--usage] [--version]"
+   echo
+   echo "Examples:"
+   echo "   $FILENAME --port 8000 --execute \"php -q /var/www/html/script.php\" --verbose"
+   echo "   $FILENAME --port 80 --execute \"systemctl start httpd.service\""
+   echo "   $FILENAME --help"
+   echo
+   exit 0
+}
+
+Version () {
+   echo "$FILENAME version 0.1"
+   echo "GNU License <http://gnu.org/licenses/gpl.html>."
+   echo "This is a free software! You are allowed to change and redistribute it for free."
+   echo "Written by Luan Rodrigues - https://github.com/luoldrigues"
+   echo
+   exit 0
+}
+
+VERBOSE=0
+PORT=NULL
+EXEC=NULL
+
+# read the options
+OPTIONS=`getopt -o "p:,e:,v,h" --long "port:,execute:,verbose,help,version,usage" -n $FILENAME -- "$@"`
+eval set -- "$OPTIONS"
+
+# extract options and their arguments into variables.
+while true ; do
+   case "$1" in
+      -p|--port)
+         case "$2" in
+            "") echo "Invalid -p or --port number"; exit 1 ;;
+            *) PORT=$2; shift 2 ;;
+         esac ;;
+      -v|--verbose) VERBOSE=1; shift ;;
+      -e|--execute)
+         case "$2" in
+            "") echo "Invalid -e or --execute command"; exit 3 ;;
+            *) EXEC=$2; shift 2 ;;
+         esac ;;
+      -h|--help) Help ;;
+      --version) Version ;;
+      --usage) Usage ;;
+      --) shift; break ;;
+      *) echo "Internal error!"; exit 1 ;;
+   esac
+done
+
+# Port validation
+re='^[0-9]+$'
+if ! [[ $PORT =~ $re ]] ; then
+   echo "Error: Invalid port number" >&2
+   exit 1
+fi
+
+# Execute Command Validation
+if [ "$EXEC" = "" ] || [ "${#EXEC}" -lt "5" ]; then
+   echo "Invalid -e or --execute command"
+   exit 3
+fi
+
+# Check Port Status
+netstat -plnt | grep ":$PORT" &> /dev/null
+
+if [ $? -eq 0 ]; then
+   # it is working well
+   if [ $VERBOSE -eq 1 ]; then
+      echo "SUCCESS: Process Port $PORT is working well"
+      echo
+   fi
+else
+   # it is not working; trying to start
+   if [ $VERBOSE -eq 1 ]; then
+      echo "FAIL: Process is not working"
+      echo "Executing Process..."
+   fi
+
+   $EXEC;
+
+   if [ $? -eq 0 ]; then
+      if [ $VERBOSE -eq 1 ]; then
+         echo "SUCCESS: Process executed successfully"
+         echo
+     fi
+  else
+      if [ $VERBOSE -eq 1 ]; then
+         echo "FAIL: Process execution failure"
+         echo
+      fi
+      exit 1
+   fi
+fi
